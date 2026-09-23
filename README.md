@@ -28,6 +28,14 @@ The trainable U-Net is optimized using a negative classifier-free-guidance targe
 
 This repository provides the cleaned TICoE training pipeline used for the paper, including reference-image generation, prompt banks, full-state checkpointing, and final edited U-Net export.
 
+<div align="center">
+  <a href="https://arxiv.org/abs/2604.15829">
+    <img src="https://arxiv.org/html/2604.15829v1/fig/fig_1_1.png" alt="TICoE framework" width="1000"/>
+  </a>
+  <br>
+  <em>Figure 2. Overview of TICoE. The framework constructs a continuous convex concept manifold from multiple prompts and encodes hierarchical visual representations to achieve precise and faithful concept erasure while preserving unrelated content.</em>
+</div>
+
 ---
 
 ## 🧱 Repository Structure

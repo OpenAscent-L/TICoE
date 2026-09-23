@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+
+# Environments
+.venv/
+venv/
+env/
+
+# Model checkpoints and generated artifacts
+checkpoints/*
+!checkpoints/.gitkeep
+data/reference_images/*
+!data/reference_images/.gitkeep
+outputs/*
+!outputs/.gitkeep
+
+# Hugging Face / PyTorch caches
+.cache/
+.huggingface/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store

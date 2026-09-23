@@ -337,18 +337,27 @@ python TICoE_train.py --help
 
 ---
 
-## 📊 Evaluation Scope
+## 📊 Evaluation
 
-The paper evaluates TICoE with:
+For attack-based evaluation, we follow the evaluation protocol used by [**UnlearnDiffAtk (ECCV 2024)**](https://github.com/OPTML-Group/Diffusion-MU-Attack), the official implementation of *To Generate or Not? Safety-Driven Unlearned Diffusion Models Are Still Easy To Generate Unsafe Images ... For Now*.
 
-- **ASR**
-- **UDA**
-- **P4D**
-- **FID**
-- **CLIP**
-- **MCP**
+### Standard Metrics
 
-This release focuses on the TICoE training pipeline and does not introduce evaluation implementations that were not present in the supplied project code.
+Following the paper, TICoE is evaluated with the following standard erasure and generation-quality metrics:
+
+- **ASR ↓**: attack success rate for inducing the erased concept.
+- **UDA ↓**: adversarial evaluation of whether optimized prompts can recover the erased concept.
+- **P4D ↓**: red-teaming attack success rate under adversarially crafted prompts.
+- **FID ↓**: distributional image-quality metric evaluated on benign generations.
+- **CLIP ↑**: text-image semantic alignment measured with CLIP-ViT-Large-Patch14.
+
+### Our Metric: MCP
+
+In addition to the standard metrics above, we introduce **Morpho-Contextual Concept Preservation (MCP) ↑** to explicitly measure whether concepts that are semantically distinct but morphologically or contextually related to the erased target remain preserved.
+
+For example, when erasing **gun**, MCP evaluates preservation of related but non-target concepts such as **camera**. A higher MCP indicates better contextual fidelity and more precise concept erasure.
+
+The evaluation prompts and concept-specific classifiers follow the settings described in the paper and supplementary material.
 
 ---
 

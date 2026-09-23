@@ -15,6 +15,14 @@ Jun Li · Lizhi Xiong · Ziqiang Li · Weiwei Jiang · Zhangjie Fu · Yong Li ·
 
 </div>
 
+<div align="center">
+  <a href="https://arxiv.org/abs/2604.15829">
+    <img src="https://arxiv.org/html/2604.15829v1/fig/fig_1_1.png" alt="TICoE framework" width="1000"/>
+  </a>
+  <br>
+  <em>Figure 2. Overview of TICoE. The framework constructs a continuous convex concept manifold from multiple prompts and encodes hierarchical visual representations to achieve precise and faithful concept erasure while preserving unrelated content.</em>
+</div>
+
 ---
 
 ## ✨ Overview
@@ -27,14 +35,6 @@ Jun Li · Lizhi Xiong · Ziqiang Li · Weiwei Jiang · Zhangjie Fu · Yong Li ·
 The trainable U-Net is optimized using a negative classifier-free-guidance target constructed from a frozen original U-Net.
 
 This repository provides the cleaned TICoE training pipeline used for the paper, including reference-image generation, prompt banks, full-state checkpointing, and final edited U-Net export.
-
-<div align="center">
-  <a href="https://arxiv.org/abs/2604.15829">
-    <img src="https://arxiv.org/html/2604.15829v1/fig/fig_1_1.png" alt="TICoE framework" width="1000"/>
-  </a>
-  <br>
-  <em>Figure 2. Overview of TICoE. The framework constructs a continuous convex concept manifold from multiple prompts and encodes hierarchical visual representations to achieve precise and faithful concept erasure while preserving unrelated content.</em>
-</div>
 
 ---
 
@@ -218,13 +218,15 @@ Layer normalization is applied to the prompt bank and to the sampled textual con
 
 ## 🚀 Train TICoE
 
-After generating the 200 reference images, train one concept with:
+After generating the 200 reference images, train one target concept with:
 
 ```bash
 python TICoE_train.py \
     --ckpt_path "$SD15_PATH" \
-    --concept tench
+    --concept <concept>
 ```
+
+Available target concepts are **{gun, nudity, tench, Van Gogh, church}**. For the command-line argument, use `van_gogh` for **Van Gogh**.
 
 The command automatically loads:
 
@@ -244,16 +246,6 @@ outputs/tench/
 ```
 
 `training_checkpoint.pt` stores the trainable U-Net, TICoE HVRL module, optimizer state, training step, and training arguments. `final_unet/` contains the edited U-Net in Diffusers format.
-
-### Train the five paper concepts
-
-```bash
-python TICoE_train.py --ckpt_path "$SD15_PATH" --concept gun
-python TICoE_train.py --ckpt_path "$SD15_PATH" --concept nudity
-python TICoE_train.py --ckpt_path "$SD15_PATH" --concept tench
-python TICoE_train.py --ckpt_path "$SD15_PATH" --concept van_gogh
-python TICoE_train.py --ckpt_path "$SD15_PATH" --concept church
-```
 
 ---
 

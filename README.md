@@ -1,15 +1,36 @@
+<div align="center">
+
 # TICoE
 
-Official implementation of **TICoE**, introduced in **Beyond Text Prompts: Precise Concept Erasure through Text-Image Collaboration**.
+### Beyond Text Prompts: Precise Concept Erasure through Text-Image Collaboration
 
-TICoE contains two core components:
+[![CVPR 2026](https://img.shields.io/badge/CVPR-2026-6A5ACD.svg)](https://cvpr.thecvf.com/)
+[![arXiv](https://img.shields.io/badge/arXiv-2604.15829-b31b1b.svg)](https://arxiv.org/abs/2604.15829)
+[![Python](https://img.shields.io/badge/Python-3.10-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.3-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 
-- **Continuous Convex Concept Manifold (CCCM):** multiple semantically related prompts are encoded by the Stable Diffusion text encoder and sampled through a Dirichlet-weighted convex combination.
-- **Hierarchical Visual Representation Learning (HVRL):** self-generated reference images are encoded into noisy diffusion latents and fused across the scales `{1.0, 0.75, 0.5}` with Transformer encoder layers.
+**Accepted to CVPR 2026**
 
-The trainable U-Net is optimized with the concept-erasure objective constructed from the frozen original U-Net and negative classifier-free guidance.
+Jun Li · Lizhi Xiong · Ziqiang Li · Weiwei Jiang · Zhangjie Fu · Yong Li · Guo-Sen Xie
 
-## 1. Repository structure
+</div>
+
+---
+
+## ✨ Overview
+
+**TICoE** is a text-image collaborative concept-erasure framework for diffusion models. It combines two complementary components:
+
+- **Continuous Convex Concept Manifold (CCCM)**: multiple semantically related prompts are encoded by the Stable Diffusion text encoder and sampled through a Dirichlet-weighted convex combination.
+- **Hierarchical Visual Representation Learning (HVRL)**: self-generated reference images are encoded into noisy diffusion latents and fused across the scales `{1.0, 0.75, 0.5}` with Transformer encoder layers.
+
+The trainable U-Net is optimized using a negative classifier-free-guidance target constructed from a frozen original U-Net.
+
+This repository provides the cleaned TICoE training pipeline used for the paper, including reference-image generation, prompt banks, full-state checkpointing, and final edited U-Net export.
+
+---
+
+## 🧱 Repository Structure
 
 ```text
 TICoE/
@@ -28,9 +49,13 @@ TICoE/
 │   └── generate_reference_images.py
 ├── scripts/
 │   └── download_sd15.py
+├── checkpoints/
+│   └── .gitkeep
 ├── data/
 │   └── reference_images/
+│       └── .gitkeep
 ├── outputs/
+│   └── .gitkeep
 └── ticoe/
     ├── __init__.py
     ├── checkpoint.py
@@ -39,11 +64,13 @@ TICoE/
     └── prompt_bank.py
 ```
 
-Only files required by the TICoE training pipeline are included. Legacy entry points, obsolete trainers, IP-Adapter modules, baseline code, and unused experiment utilities are intentionally excluded.
+Only files required by the TICoE training pipeline are included. Legacy trainers, obsolete entry points, unused experimental utilities, and unrelated baseline modules are intentionally excluded.
 
-## 2. Environment setup
+---
 
-The release uses only packages required by the cleaned TICoE code and checkpoint-download workflow.
+## ⚙️ Environment Setup
+
+Clone the repository and create the environment:
 
 ```bash
 git clone https://github.com/OpenAscent-L/TICoE.git
@@ -54,32 +81,59 @@ conda activate ticoe
 pip install -r requirements.txt
 ```
 
-The release keeps the PyTorch, TorchVision, Pillow, Transformers, and tqdm versions used by the supplied project environment. `diffusers` is set to a compatible release for a clean installation with Transformers 4.49 and the current Hugging Face Hub API.
+The released code directly depends on:
 
-The paper reports experiments on an NVIDIA RTX A6000 (48 GB). For GPU training, install a PyTorch build compatible with the CUDA driver on your machine if the default pip installation is not appropriate for your system.
+```text
+torch
+torchvision
+pillow
+transformers
+diffusers
+huggingface-hub
+safetensors
+tqdm
+```
 
-## 3. Download Stable Diffusion 1.5
+The paper reports experiments on an **NVIDIA RTX A6000 (48 GB)**. If needed, install the PyTorch build that matches the CUDA driver on your machine.
 
-The paper uses **Stable Diffusion 1.5** unless otherwise specified. Download the Diffusers-format checkpoint with:
+---
+
+## 📥 Stable Diffusion 1.5 Preparation
+
+The paper uses **Stable Diffusion 1.5** unless otherwise specified.
+
+Download the Diffusers-format checkpoint:
 
 ```bash
 python scripts/download_sd15.py \
     --output_dir ./checkpoints/stable-diffusion-v1-5
 ```
 
-Set the checkpoint path:
+Then set:
 
 ```bash
 export SD15_PATH=./checkpoints/stable-diffusion-v1-5
 ```
 
-The training code expects the usual Diffusers component structure, including `scheduler/`, `text_encoder/`, `tokenizer/`, `unet/`, and `vae/`.
+The training code expects the standard Diffusers component structure, including:
 
-You may also pass a Hugging Face model identifier directly as `--ckpt_path`; Diffusers will download and cache it automatically.
+```text
+scheduler/
+text_encoder/
+tokenizer/
+unet/
+vae/
+```
 
-## 4. Generate the 200 reference images
+A Hugging Face model identifier may also be passed directly through `--ckpt_path`.
 
-Before TICoE training, the paper uses a clean Stable Diffusion model to generate a self-generated reference-image set for each target concept. Supplementary Table 4 specifies **200 images per concept** and the following prompt templates:
+---
+
+## 🖼️ Reference-Image Generation
+
+Before TICoE training, the paper constructs a self-generated reference-image set with a clean Stable Diffusion model.
+
+Supplementary Table 4 specifies **200 images per concept** with the following templates:
 
 | Concept | Number | Generation prompt |
 | --- | ---: | --- |
@@ -107,7 +161,7 @@ data/reference_images/tench/
 └── tench_0199.png
 ```
 
-Generate all five paper concepts:
+Generate all five concepts:
 
 ```bash
 python data_generation/generate_reference_images.py \
@@ -115,17 +169,21 @@ python data_generation/generate_reference_images.py \
     --concept all
 ```
 
-The released generator follows the explicitly specified Table 4 settings: the concept-specific prompt templates above and `n=200`. The supplementary material additionally mentions filtering low-quality generations using pretrained-classifier scores and optionally appending descriptive phrases when a plain prompt performs poorly, but it does not specify the classifier, threshold, or phrase list. Those undocumented choices are not fabricated in this release.
+The released generator implements the settings explicitly specified in the paper: the five prompt templates above and `n=200`.
 
-## 5. Prompt-bank preparation
+The supplementary material additionally mentions filtering low-quality samples with pretrained-classifier scores and optionally appending descriptive phrases when a plain prompt produces poor generations. Because the paper does not specify the classifier, threshold, or descriptive-phrase list, those undocumented choices are not fabricated in this release.
 
-The five prompt banks used by TICoE are provided under:
+---
+
+## 🧠 Prompt Banks and CCCM
+
+The prompt banks used by TICoE are stored in:
 
 ```text
 configs/prompt_banks/
 ```
 
-Each file contains the concept name and its semantically related prompts. For example:
+Each file contains the target concept and its semantically related prompts. Example:
 
 ```json
 {
@@ -138,17 +196,21 @@ Each file contains the concept name and its semantically related prompts. For ex
 }
 ```
 
-TICoE encodes every prompt using the Stable Diffusion text encoder, applies layer normalization, and builds a convex textual condition using symmetric Dirichlet sampling:
+For a prompt bank `B = [e_1, ..., e_N]`, TICoE samples a convex textual condition using:
 
 ```text
 alpha = 1 / tau
+w ~ Dirichlet(alpha)
+e_c = sum_i w_i e_i
 ```
 
-The default temperature is `tau = 0.7`.
+Layer normalization is applied to the prompt bank and to the sampled textual condition. The default temperature is `tau = 0.7`.
 
-## 6. Train TICoE
+---
 
-After generating the reference images, start training with:
+## 🚀 Train TICoE
+
+After generating the 200 reference images, train one concept with:
 
 ```bash
 python TICoE_train.py \
@@ -156,7 +218,7 @@ python TICoE_train.py \
     --concept tench
 ```
 
-The command automatically reads:
+The command automatically loads:
 
 ```text
 configs/prompt_banks/tench.json
@@ -173,9 +235,9 @@ outputs/tench/
     └── diffusion_pytorch_model.bin
 ```
 
-`training_checkpoint.pt` stores the trainable U-Net, TICoE HVRL module, optimizer state, training step, and training arguments. `final_unet/` is the edited U-Net exported in Diffusers format.
+`training_checkpoint.pt` stores the trainable U-Net, TICoE HVRL module, optimizer state, training step, and training arguments. `final_unet/` contains the edited U-Net in Diffusers format.
 
-### Train all five concepts
+### Train the five paper concepts
 
 ```bash
 python TICoE_train.py --ckpt_path "$SD15_PATH" --concept gun
@@ -185,9 +247,11 @@ python TICoE_train.py --ckpt_path "$SD15_PATH" --concept van_gogh
 python TICoE_train.py --ckpt_path "$SD15_PATH" --concept church
 ```
 
-## 7. Training procedure
+---
 
-Each optimization step follows the TICoE implementation:
+## 🔬 Training Procedure
+
+Each TICoE optimization step follows this pipeline:
 
 1. Randomly sample one image from the self-generated reference set.
 2. Encode the image with the frozen VAE.
@@ -198,14 +262,16 @@ Each optimization step follows the TICoE implementation:
 7. Process the tokens with the TICoE HVRL Transformer encoder layers.
 8. Extract the original-resolution tokens and apply residual fusion.
 9. Condition the frozen and trainable U-Nets on the sampled CCCM embedding.
-10. Construct the negative-CFG target using the frozen U-Net.
-11. Jointly optimize the trainable U-Net and TICoE HVRL with the MSE erasure loss.
+10. Construct the negative-CFG target with the frozen U-Net.
+11. Jointly optimize the trainable U-Net and TICoE HVRL using the MSE erasure loss.
 
-The conditional and unconditional frozen-U-Net predictions are batched into one forward pass. This is computationally equivalent to two separate frozen-U-Net forward passes.
+For efficiency, the conditional and unconditional frozen-U-Net predictions are evaluated in one batched forward pass. This is mathematically equivalent to two separate frozen-U-Net forward passes.
 
-## 8. Hyperparameters
+---
 
-### Settings explicitly described in the paper
+## 📐 Hyperparameters
+
+### Settings described in the paper
 
 | Setting | Value |
 | --- | ---: |
@@ -220,9 +286,7 @@ The conditional and unconditional frozen-U-Net predictions are batched into one 
 
 ### Final-code implementation settings
 
-The following defaults are retained from the final TICoE implementation or exposed explicitly for the public code:
-
-| Argument | Default | Description |
+| Argument / setting | Default | Description |
 | --- | ---: | --- |
 | `--iterations` | `500` | Optimization steps |
 | `--image_number` | `200` | Reference images used for training |
@@ -232,9 +296,11 @@ The following defaults are retained from the final TICoE implementation or expos
 | `--noise_std` | `0.001` | Optional Gaussian perturbation standard deviation |
 | `--save_iter` | `100` | Full-state checkpoint update interval |
 
-The paper describes Gaussian perturbation as optional but does not report a numerical standard deviation. The public release therefore exposes `--noise_std` explicitly; use `--noise_std 0.0` to disable it.
+The paper describes Gaussian perturbation as optional but does not report a numerical standard deviation. The public code exposes `--noise_std` explicitly. Set `--noise_std 0.0` to disable this perturbation.
 
-## 9. Useful options
+---
+
+## 🛠️ Useful Options
 
 Use a custom reference-image directory:
 
@@ -263,23 +329,48 @@ python TICoE_train.py \
     --device cuda:1
 ```
 
-Inspect all available arguments:
+List all available arguments:
 
 ```bash
 python TICoE_train.py --help
 ```
 
-## 10. Evaluation scope
+---
 
-The paper evaluates TICoE using **ASR, UDA, P4D, FID, CLIP, and MCP**. This clean release focuses on the TICoE training pipeline and does not add evaluation implementations that were not present in the supplied project code.
+## 📊 Evaluation Scope
 
-## 11. Citation
+The paper evaluates TICoE with:
+
+- **ASR**
+- **UDA**
+- **P4D**
+- **FID**
+- **CLIP**
+- **MCP**
+
+This release focuses on the TICoE training pipeline and does not introduce evaluation implementations that were not present in the supplied project code.
+
+---
+
+## 📖 Citation
+
+If you find TICoE useful, please cite:
 
 ```bibtex
-@article{li2026beyond,
-  title={Beyond Text Prompts: Precise Concept Erasure through Text-Image Collaboration},
-  author={Li, Jun and Xiong, Lizhi and Li, Ziqiang and Jiang, Weiwei and Fu, Zhangjie and Li, Yong and Xie, Guo-Sen},
-  journal={arXiv preprint arXiv:2604.15829},
-  year={2026}
+@InProceedings{Li_2026_CVPR,
+    author    = {Li, Jun and Xiong, Lizhi and Li, Ziqiang and Jiang, Weiwei and Fu, Zhangjie and Li, Yong and Xie, Guo-Sen},
+    title     = {Beyond Text Prompts: Precise Concept Erasure through Text-Image Collaboration},
+    booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+    month     = {June},
+    year      = {2026},
+    pages     = {37653-37663}
 }
 ```
+
+---
+
+<div align="center">
+
+**TICoE · CVPR 2026**
+
+</div>

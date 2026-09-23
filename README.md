@@ -21,16 +21,112 @@ Jun Li · Lizhi Xiong · Ziqiang Li · Weiwei Jiang · Zhangjie Fu · Yong Li ·
 
 ---
 
-## ✨ Overview
+## 📌 Overview
 
-**TICoE** is a text-image collaborative concept-erasure framework for diffusion models. It combines two complementary components:
+**TICoE** is a text-image collaborative concept-erasure framework for diffusion models. It combines:
 
-- **Continuous Convex Concept Manifold (CCCM):** samples a continuous textual condition from multiple semantically related prompts using Dirichlet-weighted convex combinations.
-- **Hierarchical Visual Representation Learning (HVRL):** encodes self-generated reference images across multiple latent scales and fuses their visual representations with Transformer layers.
+- **Continuous Convex Concept Manifold (CCCM):** samples continuous textual conditions from multiple semantically related prompts.
+- **Hierarchical Visual Representation Learning (HVRL):** fuses self-generated visual representations across multiple latent scales.
 
-The trainable U-Net is optimized against a negative classifier-free-guidance target produced by a frozen original U-Net. The released code includes reference-image generation, prompt banks, checkpointing, and Diffusers-format U-Net export.
+The trainable U-Net is optimized against a negative classifier-free-guidance target produced by a frozen original U-Net.
 
-## 📁 Repository structure
+## ⚙️ Installation
+
+```bash
+git clone https://github.com/OpenAscent-L/TICoE.git
+cd TICoE
+
+conda create -n ticoe python=3.10 -y
+conda activate ticoe
+pip install -r requirements.txt
+```
+
+## 📦 Download model weights
+
+TICoE uses **Stable Diffusion 1.5** by default. Download a Diffusers-format checkpoint into `checkpoints/`:
+
+```bash
+python scripts/download_sd15.py \
+    --output_dir ./checkpoints/stable-diffusion-v1-5
+```
+
+Set the checkpoint path:
+
+```bash
+export SD15_PATH=./checkpoints/stable-diffusion-v1-5
+```
+
+You may also pass a Hugging Face model identifier directly through `--ckpt_path`.
+
+## 🚀 Run
+
+### 1. Generate reference images
+
+TICoE uses 200 self-generated reference images for each target concept. The released prompt banks cover `gun`, `nudity`, `tench`, `van_gogh`, and `church`.
+
+Generate one concept:
+
+```bash
+python data_generation/generate_reference_images.py \
+    --ckpt_path "$SD15_PATH" \
+    --concept tench
+```
+
+Generate all concepts:
+
+```bash
+python data_generation/generate_reference_images.py \
+    --ckpt_path "$SD15_PATH" \
+    --concept all
+```
+
+Images are saved under `data/reference_images/<concept>/`.
+
+### 2. Train TICoE
+
+```bash
+python TICoE_train.py \
+    --ckpt_path "$SD15_PATH" \
+    --concept tench
+```
+
+For **Van Gogh**, use `--concept van_gogh`. Results are written to:
+
+```text
+outputs/<concept>/
+├── training_checkpoint.pt
+└── final_unet/
+    ├── config.json
+    └── diffusion_pytorch_model.bin
+```
+
+### 3. Prompt banks and default settings
+
+Prompt banks are stored in `configs/prompt_banks/`. CCCM samples a convex textual condition with:
+
+```text
+alpha = 1 / tau
+w ~ Dirichlet(alpha)
+e_c = sum_i w_i e_i
+```
+
+Core defaults:
+
+| Setting | Value |
+|---|---:|
+| Backbone | Stable Diffusion 1.5 |
+| Reference images | 200 |
+| Training iterations | 500 |
+| U-Net learning rate | `1e-5` |
+| HVRL learning rate | `5e-5` |
+| CCCM temperature `tau` | `0.7` |
+| Negative guidance `gamma` | `1.0` |
+| HVRL residual coefficient `lambda` | `0.5` |
+| HVRL scales | `{1.0, 0.75, 0.5}` |
+
+Use `python TICoE_train.py --help` for custom image directories, prompt banks, and device selection.
+
+## 📁 Repository Structure
 
 ```text
 TICoE/
@@ -56,113 +152,9 @@ TICoE/
     └── prompt_bank.py
 ```
 
-## ⚙️ Installation
-
-```bash
-git clone https://github.com/OpenAscent-L/TICoE.git
-cd TICoE
-
-conda create -n ticoe python=3.10 -y
-conda activate ticoe
-pip install -r requirements.txt
-```
-
-## 📥 Prepare Stable Diffusion 1.5
-
-The default backbone is **Stable Diffusion 1.5**. Download a Diffusers-format checkpoint into `checkpoints/`:
-
-```bash
-python scripts/download_sd15.py \
-    --output_dir ./checkpoints/stable-diffusion-v1-5
-```
-
-Then set its path:
-
-```bash
-export SD15_PATH=./checkpoints/stable-diffusion-v1-5
-```
-
-You may also pass a Hugging Face model identifier directly through `--ckpt_path`.
-
-## 🖼️ Generate reference images
-
-TICoE uses 200 self-generated reference images for each target concept. The released prompt banks cover `gun`, `nudity`, `tench`, `van_gogh`, and `church`.
-
-Generate one concept:
-
-```bash
-python data_generation/generate_reference_images.py \
-    --ckpt_path "$SD15_PATH" \
-    --concept tench
-```
-
-Generate all concepts:
-
-```bash
-python data_generation/generate_reference_images.py \
-    --ckpt_path "$SD15_PATH" \
-    --concept all
-```
-
-Images are saved under `data/reference_images/<concept>/`.
-
-## 🧠 Prompt banks and CCCM
-
-Prompt banks are stored in `configs/prompt_banks/`. For a prompt bank `B = [e_1, ..., e_N]`, CCCM samples:
-
-```text
-alpha = 1 / tau
-w ~ Dirichlet(alpha)
-e_c = sum_i w_i e_i
-```
-
-The default temperature is `tau = 0.7`.
-
-## 🚀 Train TICoE
-
-After preparing the reference images, train a target concept with:
-
-```bash
-python TICoE_train.py \
-    --ckpt_path "$SD15_PATH" \
-    --concept tench
-```
-
-For **Van Gogh**, use `--concept van_gogh`. Results are written to:
-
-```text
-outputs/<concept>/
-├── training_checkpoint.pt
-└── final_unet/
-    ├── config.json
-    └── diffusion_pytorch_model.bin
-```
-
-The exported `final_unet/` can be loaded with the Diffusers API.
-
-## 📐 Default settings
-
-| Setting | Value |
-|---|---:|
-| Backbone | Stable Diffusion 1.5 |
-| Reference images | 200 |
-| Training iterations | 500 |
-| U-Net learning rate | `1e-5` |
-| HVRL learning rate | `5e-5` |
-| CCCM temperature `tau` | `0.7` |
-| Negative guidance `gamma` | `1.0` |
-| HVRL residual coefficient `lambda` | `0.5` |
-| HVRL scales | `{1.0, 0.75, 0.5}` |
-
-Use `python TICoE_train.py --help` to view all available options, including custom reference-image directories, prompt banks, and device selection.
-
 ## 📊 Evaluation
 
-For attack-based evaluation, we follow the protocol of [UnlearnDiffAtk](https://github.com/OPTML-Group/Diffusion-MU-Attack). The standard evaluation includes:
-
-- **ASR ↓**, **UDA ↓**, and **P4D ↓** for erasure robustness.
-- **FID ↓** and **CLIP ↑** for generation quality and text-image alignment.
-- **MCP ↑** for preserving semantically distinct but morphologically or contextually related concepts.
+For attack-based evaluation, we follow the protocol of [UnlearnDiffAtk](https://github.com/OPTML-Group/Diffusion-MU-Attack). The standard evaluation includes ASR, UDA, P4D, FID, and CLIP. **MCP** measures preservation of semantically distinct but morphologically or contextually related concepts.
 
 ## 📖 Citation
 

@@ -62,7 +62,7 @@ You may also pass a Hugging Face model identifier directly through `--ckpt_path`
 
 ### 1. Generate reference images
 
-TICoE uses 200 self-generated reference images for each target concept. The released prompt banks cover `gun`, `nudity`, `tench`, `van_gogh`, and `church`.
+For convenient reproduction, directly generate 200 reference images for each target concept using its corresponding concept-specific prompt template. The released prompt banks cover `gun`, `nudity`, `tench`, `van_gogh`, and `church`.
 
 Generate one concept:
 
